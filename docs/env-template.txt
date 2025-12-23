@@ -1,0 +1,20 @@
+# Environment Variables Configuration
+
+# HubSpot Configuration
+NEXT_PUBLIC_HUBSPOT_PORTAL_ID=your_portal_id_here
+NEXT_PUBLIC_HUBSPOT_FORM_ID=your_form_id_here
+
+# WhatsApp Configuration
+NEXT_PUBLIC_WHATSAPP_NUMBER=5511999999999
+
+# API Keys (Server-side only - do NOT prefix with NEXT_PUBLIC)
+HUBSPOT_ACCESS_TOKEN=pat-na1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+CLAUDE_API_KEY=sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+WHATSAPP_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+WHATSAPP_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Google Calendar (Optional)
+GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxxxx
+GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback
