@@ -1,35 +1,36 @@
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+"""
+Database configuration using Supabase Python Client
+"""
 import os
+from dotenv import load_dotenv
+from supabase import create_client, Client
 
-# Try to load .env if it exists, but don't fail if it doesn't
+# Load environment variables
+load_dotenv()
+
+# Supabase configuration
+SUPABASE_URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+SUPABASE_KEY = os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+
+print(f"--- SUPABASE CONFIG ---")
+print(f"URL: {SUPABASE_URL}")
+print(f"Key: {'*' * 20 if SUPABASE_KEY else 'NOT SET'}")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise ValueError("[ERROR] SUPABASE_URL and SUPABASE_KEY must be set in .env file")
+
+# Create Supabase client
 try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except:
-    pass  # Use environment variables or defaults
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    print("[OK] Supabase client initialized successfully!")
+except Exception as e:
+    print(f"[ERROR] Error initializing Supabase client: {e}")
+    raise
 
-
-# Get DB URL from environment or use SQLite as fallback locally (won't be used if user configures .env)
-# Expected format: postgresql://postgres:[PASSWORD]@[HOST]:[PORT]/postgres
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./crm_juridico.db")
-
-if "sqlite" in SQLALCHEMY_DATABASE_URL:
-    engine = create_engine(
-        SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-    )
-else:
-    engine = create_engine(SQLALCHEMY_DATABASE_URL)
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-Base = declarative_base()
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
+# Dependency for FastAPI routes
+def get_supabase() -> Client:
+    """
+    Dependency function to get Supabase client in FastAPI routes.
+    Usage: supabase: Client = Depends(get_supabase)
+    """
+    return supabase

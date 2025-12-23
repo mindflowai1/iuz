@@ -1,12 +1,11 @@
+"""
+FastAPI Main Application - Supabase native implementation
+"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .database import engine, Base
 from .routers import contacts, deals, lawyers, users
 
-# Create Tables
-Base.metadata.create_all(bind=engine)
-
-app = FastAPI()
+app = FastAPI(title="CRM Jurídico API", version="1.0.0")
 
 # Configuração CORS - CRÍTICO para permitir requisições do frontend
 origins = [
@@ -18,10 +17,10 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # Allows specified origins
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],    # Allows all methods
-    allow_headers=["*"],    # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include Routers
@@ -32,4 +31,8 @@ app.include_router(users.router, prefix="/api/v1")
 
 @app.get("/")
 def read_root():
-    return {"message": "CRM Jurídico Core Service is running!"}
+    return {"message": "CRM Jurídico Core Service is running with Supabase!"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "database": "supabase"}

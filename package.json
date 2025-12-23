@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "configure": "venv\\Scripts\\python backend/configure.py",
-    "dev": "npm run configure && concurrently \"npm:dev:backend\" \"npm:dev:frontend\"",
-    "dev:backend": "venv\\Scripts\\uvicorn backend.main:app --reload",
+    "dev": "concurrently \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "dev:backend": "venv\\\\Scripts\\\\python -m uvicorn backend.main:app --reload --port 8000",
     "dev:frontend": "next dev",
     "build": "next build",
     "start": "next start",

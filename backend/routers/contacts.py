@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from typing import List
+"""
+Contacts router - Supabase native implementation
+"""
+from fastapi import APIRouter, Depends, HTTPException, status, Body
+from supabase import Client
+from typing import List, Dict, Any
 
-from .. import models, schemas
-from ..database import get_db
+from ..database import get_supabase
 
 router = APIRouter(
     prefix="/contacts",
@@ -11,65 +13,82 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.post("/", response_model=schemas.Contact, status_code=status.HTTP_201_CREATED)
-def create_contact(contact: schemas.ContactCreate, db: Session = Depends(get_db)):
-    db_contact = db.query(models.Contact).filter(models.Contact.email == contact.email).first()
-    if db_contact:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    new_contact = models.Contact(
-        name=contact.name,
-        email=contact.email,
-        phone=contact.phone
-    )
-    db.add(new_contact)
-    db.commit()
-    db.refresh(new_contact)
-    return new_contact
+@router.post("/", status_code=status.HTTP_201_CREATED)
+def create_contact(contact: Dict[str, Any] = Body(...), supabase: Client = Depends(get_supabase)):
+    """Create a new contact"""
+    try:
+        response = supabase.table("contacts").insert(contact).execute()
+        return response.data[0] if response.data else {}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/", response_model=List[schemas.Contact])
-def read_contacts(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    contacts = db.query(models.Contact).offset(skip).limit(limit).all()
-    return contacts
+@router.get("/")
+def read_contacts(skip: int = 0, limit: int = 100, supabase: Client = Depends(get_supabase)):
+    """Get all contacts"""
+    try:
+        response = (
+            supabase.table("contacts")
+            .select("*")
+            .range(skip, skip + limit - 1)
+            .execute()
+        )
+        return response.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/search", response_model=List[schemas.Contact])
-def search_contacts(q: str, db: Session = Depends(get_db)):
-    contacts = db.query(models.Contact).filter(models.Contact.name.ilike(f"%{q}%")).limit(10).all()
-    return contacts
+@router.get("/{contact_id}")
+def read_contact(contact_id: int, supabase: Client = Depends(get_supabase)):
+    """Get a specific contact"""
+    try:
+        response = (
+            supabase.table("contacts")
+            .select("*")
+            .eq("id", contact_id)
+            .execute()
+        )
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Contact not found")
+        return response.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{contact_id}", response_model=schemas.Contact)
-def read_contact(contact_id: int, db: Session = Depends(get_db)):
-    db_contact = db.query(models.Contact).filter(models.Contact.id == contact_id).first()
-    if db_contact is None:
-        raise HTTPException(status_code=404, detail="Contact not found")
-    return db_contact
-
-@router.put("/{contact_id}", response_model=schemas.Contact)
-def update_contact(contact_id: int, contact: schemas.ContactUpdate, db: Session = Depends(get_db)):
-    db_contact = db.query(models.Contact).filter(models.Contact.id == contact_id).first()
-    if db_contact is None:
-        raise HTTPException(status_code=404, detail="Contact not found")
-    
-    # Check if email is changing to one that already exists
-    if contact.email != db_contact.email:
-        existing_contact = db.query(models.Contact).filter(models.Contact.email == contact.email).first()
-        if existing_contact:
-            raise HTTPException(status_code=400, detail="Email already registered")
-
-    db_contact.name = contact.name
-    db_contact.email = contact.email
-    db_contact.phone = contact.phone
-    
-    db.commit()
-    db.refresh(db_contact)
-    return db_contact
+@router.put("/{contact_id}")
+def update_contact(contact_id: int, contact_update: Dict[str, Any] = Body(...), supabase: Client = Depends(get_supabase)):
+    """Update a contact"""
+    try:
+        # Check if contact exists
+        check_response = supabase.table("contacts").select("id").eq("id", contact_id).execute()
+        if not check_response.data:
+            raise HTTPException(status_code=404, detail="Contact not found")
+        
+        # Update contact
+        response = (
+            supabase.table("contacts")
+            .update(contact_update)
+            .eq("id", contact_id)
+            .execute()
+        )
+        return response.data[0] if response.data else {}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/{contact_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_contact(contact_id: int, db: Session = Depends(get_db)):
-    db_contact = db.query(models.Contact).filter(models.Contact.id == contact_id).first()
-    if db_contact is None:
-        raise HTTPException(status_code=404, detail="Contact not found")
-    
-    db.delete(db_contact)
-    db.commit()
-    return None
+def delete_contact(contact_id: int, supabase: Client = Depends(get_supabase)):
+    """Delete a contact"""
+    try:
+        # Check if contact exists
+        check_response = supabase.table("contacts").select("id").eq("id", contact_id).execute()
+        if not check_response.data:
+            raise HTTPException(status_code=404, detail="Contact not found")
+        
+        # Delete contact
+        supabase.table("contacts").delete().eq("id", contact_id).execute()
+        return None
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -67,9 +67,15 @@ export default function EditDealModal({ isOpen, onClose, deal, onSave, onDelete 
     // API Fetchers
     const fetchContacts = async (query: string) => {
         try {
-            const response = await fetch(`${endpoints.contacts}/search?q=${query}`);
+            const response = await fetch(endpoints.contacts);
             if (!response.ok) return [];
-            return await response.json();
+            const contacts = await response.json();
+            // Filter locally by query
+            if (!query) return contacts;
+            return contacts.filter((c: any) =>
+                c.name?.toLowerCase().includes(query.toLowerCase()) ||
+                c.email?.toLowerCase().includes(query.toLowerCase())
+            );
         } catch (error) {
             return [];
         }
@@ -77,9 +83,16 @@ export default function EditDealModal({ isOpen, onClose, deal, onSave, onDelete 
 
     const fetchLawyers = async (query: string) => {
         try {
-            const response = await fetch(`${endpoints.lawyers}/search?q=${query}`);
+            const response = await fetch(endpoints.lawyers);
             if (!response.ok) return [];
-            return await response.json();
+            const lawyers = await response.json();
+            // Filter locally by query
+            if (!query) return lawyers;
+            return lawyers.filter((l: any) =>
+                l.name?.toLowerCase().includes(query.toLowerCase()) ||
+                l.email?.toLowerCase().includes(query.toLowerCase()) ||
+                l.oab?.toLowerCase().includes(query.toLowerCase())
+            );
         } catch (error) {
             return [];
         }
