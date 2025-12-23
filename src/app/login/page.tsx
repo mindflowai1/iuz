@@ -66,27 +66,19 @@ export default function LoginPage() {
                     options: {
                         data: {
                             full_name: fullName,
+                            cpf,
+                            address,
+                            city,
+                            state,
+                            zip_code: zipCode,
                         }
                     }
                 });
 
                 if (authError) throw authError;
 
-                if (authData.user) {
-                    // Save extra profile info
-                    const { error: profileError } = await supabase.from('profiles').upsert({
-                        id: authData.user.id,
-                        full_name: fullName,
-                        cpf,
-                        address,
-                        city,
-                        state,
-                        zip_code: zipCode,
-                        updated_at: new Date()
-                    });
-
-                    if (profileError) throw profileError;
-                }
+                // O trigger automático do Supabase cria o perfil em 'profiles'
+                // usando os dados de raw_user_meta_data
 
                 alert('Cadastro realizado! Verifique seu email para confirmar.');
                 setIsSignUp(false); // Switch back to login
