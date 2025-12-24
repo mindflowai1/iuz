@@ -47,7 +47,7 @@ export default function DealCard({ deal, isOverlay, isHighlighted, onClick }: De
     bg-slate-800/90 backdrop-blur-xl rounded-xl shadow-md border-l-[4px] cursor-grab hover:shadow-lg hover:-translate-y-0.5 group relative transition-all duration-200 w-full
     ${isDragging ? 'opacity-40 border-l-amber-500 ring-2 ring-amber-500/50 grayscale' : `border-slate-700/60 hover:border-slate-600 ${config.border}`}
     ${isOverlay ? 'ring-2 ring-indigo-500/50 shadow-2xl scale-105 z-50 cursor-grabbing bg-slate-800' : ''}
-    ${isHighlighted ? 'ring-2 ring-amber-400/80 shadow-[0_0_20px_rgba(251,191,36,0.2)] z-10 bg-slate-800' : ''}
+    ${isHighlighted ? 'ring-[3px] ring-amber-400/90 shadow-[0_0_25px_rgba(251,191,36,0.4)] z-20 bg-slate-800/95 border-l-amber-400' : ''}
     `;
 
     return (
@@ -61,6 +61,16 @@ export default function DealCard({ deal, isOverlay, isHighlighted, onClick }: De
             {...attributes}
             {...listeners}
         >
+            {/* Indicador discreto "Selecionado" */}
+            {isHighlighted && (
+                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10">
+                    <div className="flex items-center gap-1.5 bg-amber-500/20 border border-amber-400/60 rounded-full px-3 py-1 backdrop-blur-sm">
+                        <div className="w-1.5 h-1.5 bg-amber-400 rounded-full"></div>
+                        <span className="text-[9px] font-semibold text-amber-300 uppercase tracking-wide">Selecionado</span>
+                    </div>
+                </div>
+            )}
+
             <div className="p-3.5 space-y-2.5">
 
                 {/* Header: Priority Badge + Date */}
