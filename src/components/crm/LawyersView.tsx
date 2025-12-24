@@ -7,6 +7,15 @@ interface LawyersViewProps {
     onNavigateToDeal?: (dealId: string) => void;
 }
 
+// Configuração de cores para os estágios
+const STAGE_CONFIG: any = {
+    'triagem': { color: 'text-slate-400', border: 'border-slate-700', bg: 'bg-slate-800' },
+    'analise': { color: 'text-blue-400', border: 'border-blue-500/30', bg: 'bg-blue-500/10' },
+    'proposta': { color: 'text-amber-400', border: 'border-amber-500/30', bg: 'bg-amber-500/10' },
+    'fechado': { color: 'text-emerald-400', border: 'border-emerald-500/30', bg: 'bg-emerald-500/10' },
+    'execucao': { color: 'text-purple-400', border: 'border-purple-500/30', bg: 'bg-purple-500/10' },
+};
+
 export default function LawyersView({ onNavigateToDeal }: LawyersViewProps) {
     const { lawyers, deals, loading, deleteLawyer, addLawyer, updateLawyer } = useCRM();
 
@@ -182,24 +191,29 @@ export default function LawyersView({ onNavigateToDeal }: LawyersViewProps) {
                                             <td className="p-6">
                                                 <div className="flex flex-col gap-2 max-h-[120px] overflow-y-auto custom-scrollbar pr-2">
                                                     {lawyerDeals.length > 0 ? (
-                                                        lawyerDeals.map(deal => (
-                                                            <button
-                                                                key={deal.id}
-                                                                onClick={() => onNavigateToDeal && onNavigateToDeal(String(deal.id))}
-                                                                className="text-left px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-indigo-500/50 transition-all group/deal w-full flex items-center justify-between"
-                                                                title={`Ir para negócio: ${deal.title}`}
-                                                            >
-                                                                <div className="flex items-center gap-2 overflow-hidden">
-                                                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
-                                                                    <span className="text-sm font-medium text-slate-300 group-hover/deal:text-white truncate">
-                                                                        {deal.title}
+                                                        lawyerDeals.map(deal => {
+                                                            const stageKey = deal.stage ? deal.stage.toLowerCase() : 'triagem';
+                                                            const stageConfig = STAGE_CONFIG[stageKey] || STAGE_CONFIG['triagem'];
+
+                                                            return (
+                                                                <button
+                                                                    key={deal.id}
+                                                                    onClick={() => onNavigateToDeal && onNavigateToDeal(String(deal.id))}
+                                                                    className="text-left px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-indigo-500/50 transition-all group/deal w-full flex items-center justify-between shadow-sm"
+                                                                    title={`Ir para negócio: ${deal.title}`}
+                                                                >
+                                                                    <div className="flex items-center gap-2 overflow-hidden">
+                                                                        <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${stageConfig.color.replace('text-', 'bg-')}`} />
+                                                                        <span className="text-sm font-medium text-slate-300 group-hover/deal:text-white truncate">
+                                                                            {deal.title}
+                                                                        </span>
+                                                                    </div>
+                                                                    <span className={`text-[9px] uppercase tracking-wider ml-2 flex-shrink-0 px-2 py-0.5 rounded border font-bold ${stageConfig.color} ${stageConfig.border} ${stageConfig.bg}`}>
+                                                                        {deal.stage}
                                                                     </span>
-                                                                </div>
-                                                                <span className="text-[10px] text-slate-500 uppercase tracking-wider ml-2 flex-shrink-0">
-                                                                    {deal.stage}
-                                                                </span>
-                                                            </button>
-                                                        ))
+                                                                </button>
+                                                            );
+                                                        })
                                                     ) : (
                                                         <div className="flex items-center gap-2 text-slate-500 italic text-sm">
                                                             <div className="w-1.5 h-1.5 rounded-full bg-slate-700" />

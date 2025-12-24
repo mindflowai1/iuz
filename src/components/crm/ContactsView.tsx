@@ -9,6 +9,15 @@ interface ContactsViewProps {
     onNavigateToDeal?: (dealId: string) => void;
 }
 
+// Configuração de cores para os estágios
+const STAGE_CONFIG: any = {
+    'triagem': { color: 'text-slate-400', border: 'border-slate-700', bg: 'bg-slate-800' },
+    'analise': { color: 'text-blue-400', border: 'border-blue-500/30', bg: 'bg-blue-500/10' },
+    'proposta': { color: 'text-amber-400', border: 'border-amber-500/30', bg: 'bg-amber-500/10' },
+    'fechado': { color: 'text-emerald-400', border: 'border-emerald-500/30', bg: 'bg-emerald-500/10' },
+    'execucao': { color: 'text-purple-400', border: 'border-purple-500/30', bg: 'bg-purple-500/10' },
+};
+
 export default function ContactsView({ onNavigateToDeal }: ContactsViewProps) {
     // Encapsulated Data Fetching
     const { contacts, loading, deleteContact, addContact, updateContact } = useCRM();
@@ -161,29 +170,39 @@ export default function ContactsView({ onNavigateToDeal }: ContactsViewProps) {
                                                 </div>
                                             </td>
                                             <td className="p-5">
-                                                <div className="flex flex-col gap-2">
+                                                <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto custom-scrollbar pr-2">
                                                     {stats.count === 0 ? (
                                                         <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800/50 text-slate-500 border border-slate-700/50 w-fit">
                                                             0 Negócios
                                                         </span>
                                                     ) : (
-                                                        stats.deals.map(deal => (
-                                                            <div key={deal.id} className="flex flex-col mb-2">
+                                                        stats.deals.map(deal => {
+                                                            const stageKey = deal.stage ? deal.stage.toLowerCase() : 'triagem';
+                                                            const stageConfig = STAGE_CONFIG[stageKey] || STAGE_CONFIG['triagem'];
+
+                                                            return (
                                                                 <button
+                                                                    key={deal.id}
                                                                     onClick={() => onNavigateToDeal && onNavigateToDeal(String(deal.id))}
-                                                                    className="group/deal flex flex-col items-start p-2.5 rounded-xl bg-slate-800/80 border border-amber-500/20 hover:border-amber-500/50 hover:bg-slate-800 transition-all w-fit shadow-lg shadow-black/20"
+                                                                    className="group/deal flex flex-col items-start p-2.5 rounded-xl bg-slate-800/80 border border-white/5 hover:border-amber-500/30 hover:bg-slate-800 transition-all w-full shadow-sm relative overflow-hidden"
                                                                 >
-                                                                    <span className="text-sm font-bold text-amber-400 group-hover/deal:text-amber-300 transition-colors">
-                                                                        {deal.title}
-                                                                    </span>
+                                                                    <div className="flex items-center justify-between w-full gap-2 relative z-10">
+                                                                        <span className="text-sm font-medium text-slate-200 group-hover/deal:text-amber-400 transition-colors truncate">
+                                                                            {deal.title}
+                                                                        </span>
+                                                                        <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded border font-bold flex-shrink-0 ${stageConfig.color} ${stageConfig.border} ${stageConfig.bg}`}>
+                                                                            {deal.stage}
+                                                                        </span>
+                                                                    </div>
+
                                                                     {deal.value > 0 && (
-                                                                        <span className="text-xs font-semibold text-emerald-400 mt-1 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                                                        <span className="text-xs font-bold text-emerald-400 mt-1.5 bg-emerald-500/5 px-2 py-0.5 rounded-md border border-emerald-500/10 group-hover/deal:bg-emerald-500/10 transition-colors">
                                                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(deal.value)}
                                                                         </span>
                                                                     )}
                                                                 </button>
-                                                            </div>
-                                                        ))
+                                                            );
+                                                        })
                                                     )}
                                                 </div>
                                             </td>

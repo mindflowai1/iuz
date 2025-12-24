@@ -117,7 +117,6 @@ export function CRMProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         fetchData();
-
         // Realtime Subscription (Optional / Future Proofing)
         // const channel = supabase.channel('crm_updates').subscribe();
         // return () => { supabase.removeChannel(channel) }
@@ -126,7 +125,9 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     // --- Deals Actions ---
     const addDeal = async (deal: any) => {
         try {
-            const { error } = await supabase.from('deals').insert([deal]);
+            // Remove user_id to ensure DB uses default auth.uid() (security)
+            const { user_id, ...newDeal } = deal;
+            const { error } = await supabase.from('deals').insert([newDeal]);
             if (!error) {
                 await fetchData();
                 return true;
@@ -144,8 +145,8 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         setDeals(prev => prev.map(d => d.id === deal.id ? { ...d, ...deal } : d));
 
         try {
-            // Remove nested objects before update
-            const { contact, owner, contact_name, owner_name, id, ...cleanDeal } = deal;
+            // Remove nested objects and user_id (security) before update
+            const { contact, owner, contact_name, owner_name, user_id, id, ...cleanDeal } = deal;
             const { error } = await supabase
                 .from('deals')
                 .update(cleanDeal)
@@ -187,7 +188,8 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     // --- Contacts Actions ---
     const addContact = async (contact: any) => {
         try {
-            const { error } = await supabase.from('contacts').insert([contact]);
+            const { user_id, ...newContact } = contact;
+            const { error } = await supabase.from('contacts').insert([newContact]);
             if (!error) {
                 await fetchData();
                 return true;
@@ -199,22 +201,20 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     };
 
     const updateContact = async (contact: any) => {
-        const oldContacts = [...contacts];
-        setContacts(prev => prev.map(c => c.id === contact.id ? contact : c));
         try {
-            const { id, ...data } = contact;
+            const { user_id, ...cleanContact } = contact;
             const { error } = await supabase
                 .from('contacts')
-                .update(data)
-                .eq('id', id);
+                .update(cleanContact)
+                .eq('id', contact.id);
 
-            if (error) {
-                setContacts(oldContacts);
-                return false;
+            if (!error) {
+                await fetchData();
+                return true;
             }
-            return true;
+            // Fallback: try old optimistic update logic if needed, but fetch is safer
+            return false;
         } catch (e) {
-            setContacts(oldContacts);
             return false;
         }
     };
@@ -242,7 +242,8 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     // --- Lawyers Actions ---
     const addLawyer = async (lawyer: any) => {
         try {
-            const { error } = await supabase.from('lawyers').insert([lawyer]);
+            const { user_id, ...newLawyer } = lawyer;
+            const { error } = await supabase.from('lawyers').insert([newLawyer]);
             if (!error) {
                 await fetchData();
                 return true;
@@ -255,22 +256,19 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     };
 
     const updateLawyer = async (lawyer: any) => {
-        const oldLawyers = [...lawyers];
-        setLawyers(prev => prev.map(l => l.id === lawyer.id ? lawyer : l));
         try {
-            const { id, ...data } = lawyer;
+            const { user_id, ...cleanLawyer } = lawyer;
             const { error } = await supabase
                 .from('lawyers')
-                .update(data)
-                .eq('id', id);
+                .update(cleanLawyer)
+                .eq('id', lawyer.id);
 
-            if (error) {
-                setLawyers(oldLawyers);
-                return false;
+            if (!error) {
+                await fetchData();
+                return true;
             }
-            return true;
+            return false;
         } catch (e) {
-            setLawyers(oldLawyers);
             return false;
         }
     };
@@ -294,7 +292,6 @@ export function CRMProvider({ children }: { children: ReactNode }) {
             return false;
         }
     };
-
 
     return (
         <CRMContext.Provider value={{
