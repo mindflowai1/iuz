@@ -19,7 +19,7 @@ export function IuzSection() {
     }, []);
 
     return (
-        <section className="relative min-h-screen px-6 flex items-center justify-center overflow-hidden bg-[#020408]">
+        <section className="relative min-h-screen px-4 sm:px-6 flex items-center justify-center overflow-hidden bg-[#020408] pt-32 md:pt-0">
 
             {/* --- Deep Space Aurora Background --- */}
             <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
