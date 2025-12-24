@@ -66,47 +66,49 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     const fetchData = async () => {
         setLoading(true);
         setError(null);
-        console.log("CRMContext: Starting fetch...");
+        console.log("CRMContext: Starting fetch from Supabase...");
         try {
+            // Fetch diretamente do Supabase (sem backend Python)
             const [dealsRes, contactsRes, lawyersRes] = await Promise.all([
-                fetch(`${endpoints.deals}/`).catch(e => {
-                    console.error("Fetch Deals Error:", e);
-                    return { ok: false, status: 500, json: async () => [] };
-                }),
-                fetch(`${endpoints.contacts}/`).catch(e => {
-                    console.error("Fetch Contacts Error:", e);
-                    return { ok: false, status: 500, json: async () => [] };
-                }),
-                // Optimistically attempt to fetch lawyers if endpoint exists
-                fetch(`${endpoints.lawyers}/`).catch(e => {
-                    console.error("Fetch Lawyers Error:", e);
-                    return { ok: false, status: 500, json: async () => [] };
-                })
+                supabase
+                    .from('deals')
+                    .select('*, contact:contacts(id, name, email), owner:lawyers(id, name, email)')
+                    .order('created_at', { ascending: false }),
+                supabase
+                    .from('contacts')
+                    .select('*')
+                    .order('created_at', { ascending: false }),
+                supabase
+                    .from('lawyers')
+                    .select('*')
+                    .order('created_at', { ascending: false })
             ]);
 
-            console.log("CRMContext: Responses received", {
-                dealsStatus: dealsRes.status,
-                contactsStatus: contactsRes.status
+            console.log("CRMContext: Supabase responses", {
+                dealsError: dealsRes.error,
+                contactsError: contactsRes.error,
+                lawyersError: lawyersRes.error
             });
 
-            // Safe JSON parsing with explicit casting/checking if needed, 
-            // but the mock object above now has .json() to satisfy basic usage or we check .ok
-            const newDeals = dealsRes.ok ? await dealsRes.json() : [];
-            const newContacts = contactsRes.ok ? await contactsRes.json() : [];
-            const newLawyers = lawyersRes.ok ? await lawyersRes.json() : [];
+            // Process deals to add contact_name and owner_name
+            const dealsData = (dealsRes.data || []).map((deal: any) => ({
+                ...deal,
+                contact_name: deal.contact?.name || '---',
+                owner_name: deal.owner?.name || '---',
+            }));
 
-            console.log("CRMContext: Data parsed", {
-                dealsCount: newDeals.length,
-                contactsCount: newContacts.length,
-                lawyersCount: newLawyers.length
+            console.log("CRMContext: Data loaded", {
+                dealsCount: dealsData.length,
+                contactsCount: contactsRes.data?.length || 0,
+                lawyersCount: lawyersRes.data?.length || 0
             });
 
-            setDeals(newDeals);
-            setContacts(newContacts);
-            setLawyers(newLawyers);
+            setDeals(dealsData);
+            setContacts(contactsRes.data || []);
+            setLawyers(lawyersRes.data || []);
         } catch (err: any) {
             console.error("CRM Data Fetch Critical Error:", err);
-            setError("Falha ao carregar dados. Verifique a conexão.");
+            setError("Falha ao carregar dados. Verifique a conexão com o Supabase.");
         } finally {
             console.log("CRMContext: Finished loading");
             setLoading(false);
@@ -124,15 +126,12 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     // --- Deals Actions ---
     const addDeal = async (deal: any) => {
         try {
-            const res = await fetch(`${endpoints.deals}/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(deal)
-            });
-            if (res.ok) {
-                await fetchData(); // Simple refresh for consistency
+            const { error } = await supabase.from('deals').insert([deal]);
+            if (!error) {
+                await fetchData();
                 return true;
             }
+            console.error('Add deal error:', error);
             return false;
         } catch (e) {
             console.error(e);
@@ -141,18 +140,20 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     };
 
     const updateDeal = async (deal: any) => {
-        // Optimistic Update
         const oldDeals = [...deals];
         setDeals(prev => prev.map(d => d.id === deal.id ? { ...d, ...deal } : d));
 
         try {
-            const res = await fetch(`${endpoints.deals}/${deal.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(deal)
-            });
-            if (!res.ok) {
-                setDeals(oldDeals); // Revert
+            // Remove nested objects before update
+            const { contact, owner, contact_name, owner_name, id, ...cleanDeal } = deal;
+            const { error } = await supabase
+                .from('deals')
+                .update(cleanDeal)
+                .eq('id', deal.id);
+
+            if (error) {
+                console.error('Update deal error:', error);
+                setDeals(oldDeals);
                 return false;
             }
             return true;
@@ -167,8 +168,12 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         setDeals(prev => prev.filter(d => d.id !== id));
 
         try {
-            const res = await fetch(`${endpoints.deals}/${id}`, { method: 'DELETE' });
-            if (!res.ok) {
+            const { error } = await supabase
+                .from('deals')
+                .delete()
+                .eq('id', id);
+
+            if (error) {
                 setDeals(oldDeals);
                 return false;
             }
@@ -182,12 +187,8 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     // --- Contacts Actions ---
     const addContact = async (contact: any) => {
         try {
-            const res = await fetch(`${endpoints.contacts}/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(contact)
-            });
-            if (res.ok) {
+            const { error } = await supabase.from('contacts').insert([contact]);
+            if (!error) {
                 await fetchData();
                 return true;
             }
@@ -201,12 +202,13 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         const oldContacts = [...contacts];
         setContacts(prev => prev.map(c => c.id === contact.id ? contact : c));
         try {
-            const res = await fetch(`${endpoints.contacts}/${contact.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(contact)
-            });
-            if (!res.ok) {
+            const { id, ...data } = contact;
+            const { error } = await supabase
+                .from('contacts')
+                .update(data)
+                .eq('id', id);
+
+            if (error) {
                 setContacts(oldContacts);
                 return false;
             }
@@ -221,8 +223,12 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         const oldContacts = [...contacts];
         setContacts(prev => prev.filter(c => c.id !== id));
         try {
-            const res = await fetch(`${endpoints.contacts}/${id}`, { method: 'DELETE' });
-            if (!res.ok) {
+            const { error } = await supabase
+                .from('contacts')
+                .delete()
+                .eq('id', id);
+
+            if (error) {
                 setContacts(oldContacts);
                 return false;
             }
@@ -236,12 +242,8 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     // --- Lawyers Actions ---
     const addLawyer = async (lawyer: any) => {
         try {
-            const res = await fetch(`${endpoints.lawyers}/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(lawyer)
-            });
-            if (res.ok) {
+            const { error } = await supabase.from('lawyers').insert([lawyer]);
+            if (!error) {
                 await fetchData();
                 return true;
             }
@@ -256,12 +258,13 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         const oldLawyers = [...lawyers];
         setLawyers(prev => prev.map(l => l.id === lawyer.id ? lawyer : l));
         try {
-            const res = await fetch(`${endpoints.lawyers}/${lawyer.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(lawyer)
-            });
-            if (!res.ok) {
+            const { id, ...data } = lawyer;
+            const { error } = await supabase
+                .from('lawyers')
+                .update(data)
+                .eq('id', id);
+
+            if (error) {
                 setLawyers(oldLawyers);
                 return false;
             }
@@ -276,8 +279,12 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         const oldLawyers = [...lawyers];
         setLawyers(prev => prev.filter(l => l.id !== id));
         try {
-            const res = await fetch(`${endpoints.lawyers}/${id}`, { method: 'DELETE' });
-            if (!res.ok) {
+            const { error } = await supabase
+                .from('lawyers')
+                .delete()
+                .eq('id', id);
+
+            if (error) {
                 setLawyers(oldLawyers);
                 return false;
             }
