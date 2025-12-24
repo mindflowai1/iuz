@@ -11,7 +11,7 @@ interface AddDealModalProps {
     onSave: (deal: any) => void;
 }
 
-import { endpoints } from '@/lib/api_config';
+import { supabase } from '@/lib/supabase';
 import AddClientModal from './AddClientModal';
 
 export default function AddDealModal({ isOpen, onClose, onSave }: AddDealModalProps) {
@@ -40,26 +40,38 @@ export default function AddDealModal({ isOpen, onClose, onSave }: AddDealModalPr
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const response = await fetch(`${endpoints.deals}/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...formData,
-                    value: parseFloat(formData.value) || 0,
-                    contact_id: formData.contact_id ? parseInt(formData.contact_id) : null,
-                    owner_id: formData.owner_id ? parseInt(formData.owner_id) : null,
-                })
-            });
+            const cleanData = {
+                ...formData,
+                value: parseFloat(formData.value) || 0,
+                contact_id: formData.contact_id ? parseInt(formData.contact_id) : null,
+                owner_id: formData.owner_id ? parseInt(formData.owner_id) : null,
+            };
 
-            if (response.ok) {
-                const newDeal = await response.json();
-                onSave(newDeal);
-                setFormData({
-                    title: '', contact_name: '', contact_id: '', value: '', area_do_direito: 'Cível', stage: 'Triagem',
-                    process_number: '', court: '', urgency_level: 'Medium', next_activity_date: '', owner_name: '', owner_id: ''
-                });
-                onClose();
-            }
+            // Remove non-db fields if any, but explicitly keep compatible ones
+            // Actually, we should probably rely on onSave to handle the saving if it's passed from parent
+            // But looking at previous code, it was doing a POST here.
+
+            // Let's use direct Supabase insert here since we are migrating from API call
+            // But wait, onSave in KanbanBoard calls addDeal from context.
+            // Let's see if onSave is enough. 
+            // In KanbanBoard: handleSaveNewDeal calls addDeal(newDeal). 
+            // So we should just construct the object and call onSave.
+
+            // However, the original code did a fetch POST. 
+            // If I change to just onSave(cleanData), the KanbanBoard's addDeal will handle the Supabase insert.
+            // Let's verifying KanbanBoard's handleSaveNewDeal.
+            // const handleSaveNewDeal = async (newDeal: any) => { const success = await addDeal(newDeal); ... }
+            // context addDeal does the insert.
+
+            // So we just need to pass the data to onSave.
+            onSave(cleanData);
+
+            setFormData({
+                title: '', contact_name: '', contact_id: '', value: '', area_do_direito: 'Cível', stage: 'Triagem',
+                process_number: '', court: '', urgency_level: 'Medium', next_activity_date: '', owner_name: '', owner_id: ''
+            });
+            onClose();
+
         } catch (error) {
             console.error("Error creating deal:", error);
         }
@@ -68,22 +80,40 @@ export default function AddDealModal({ isOpen, onClose, onSave }: AddDealModalPr
     // API Fetchers
     const fetchContacts = async (query: string) => {
         try {
-            const response = await fetch(`${endpoints.contacts}/search?q=${query}`);
-            if (!response.ok) return [];
-            return await response.json();
+            let queryBuilder = supabase.from('contacts').select('id, name, email');
+
+            if (query) {
+                queryBuilder = queryBuilder.ilike('name', `%${query}%`);
+            }
+
+            const { data, error } = await queryBuilder.limit(20);
+
+            if (error) {
+                console.error('Error fetching contacts:', error);
+                return [];
+            }
+            return data || [];
         } catch (error) {
-            console.error("Error fetching contacts:", error);
             return [];
         }
     };
 
     const fetchLawyers = async (query: string) => {
         try {
-            const response = await fetch(`${endpoints.lawyers}/search?q=${query}`);
-            if (!response.ok) return [];
-            return await response.json();
+            let queryBuilder = supabase.from('lawyers').select('id, name, email, oab');
+
+            if (query) {
+                queryBuilder = queryBuilder.ilike('name', `%${query}%`);
+            }
+
+            const { data, error } = await queryBuilder.limit(20);
+
+            if (error) {
+                console.error('Error fetching lawyers:', error);
+                return [];
+            }
+            return data || [];
         } catch (error) {
-            console.error("Error fetching lawyers:", error);
             return [];
         }
     };

@@ -179,11 +179,24 @@ export default function KanbanBoard({ highlightedDealId, onClearHighlight }: Kan
         const overCard = localDeals.find(d => String(d.id) === overId);
         const newStage = overColumnId || overCard?.stage;
 
+        console.log("KanbanBoard: DragEnd", { activeDealId, overId, newStage });
+
         if (newStage) {
             const originalDeal = deals.find(d => String(d.id) === activeDealId);
 
+            if (!originalDeal) {
+                console.error("KanbanBoard: Critical - Original deal not found in context for ID:", activeDealId);
+                return;
+            }
+
             // Only update backend if stage changed
-            if (originalDeal && originalDeal.stage !== newStage) {
+            if (originalDeal.stage !== newStage) {
+                console.log("KanbanBoard: Stage changed, updating...", {
+                    id: originalDeal.id,
+                    from: originalDeal.stage,
+                    to: newStage
+                });
+
                 // Update local visual state first (should happen via DragOver but ensure consistency)
                 setLocalDeals(prev => prev.map(d => String(d.id) === activeDealId ? { ...d, stage: newStage } : d));
 

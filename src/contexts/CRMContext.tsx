@@ -141,12 +141,22 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     };
 
     const updateDeal = async (deal: any) => {
+        if (!deal.id) {
+            console.error("CRMContext: Update failed. Missing ID in deal object:", deal);
+            return false;
+        }
+
         const oldDeals = [...deals];
+        // Optimistic update
         setDeals(prev => prev.map(d => d.id === deal.id ? { ...d, ...deal } : d));
 
         try {
             // Remove nested objects and user_id (security) before update
+            // Also explicitly exclude 'id' from the body, as it's a URL parameter
             const { contact, owner, contact_name, owner_name, user_id, id, ...cleanDeal } = deal;
+
+            console.log("CRMContext: Updating deal", { id: deal.id, fields: cleanDeal });
+
             const { error } = await supabase
                 .from('deals')
                 .update(cleanDeal)
@@ -154,12 +164,13 @@ export function CRMProvider({ children }: { children: ReactNode }) {
 
             if (error) {
                 console.error('Update deal error:', error);
-                setDeals(oldDeals);
+                setDeals(oldDeals); // Rollback
                 return false;
             }
             return true;
         } catch (e) {
-            setDeals(oldDeals);
+            console.error("Update deal exception:", e);
+            setDeals(oldDeals); // Rollback
             return false;
         }
     };
@@ -201,6 +212,11 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     };
 
     const updateContact = async (contact: any) => {
+        if (!contact.id) {
+            console.error("CRMContext: Update failed. Missing ID in contact:", contact);
+            return false;
+        }
+
         try {
             const { user_id, ...cleanContact } = contact;
             const { error } = await supabase
@@ -212,7 +228,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
                 await fetchData();
                 return true;
             }
-            // Fallback: try old optimistic update logic if needed, but fetch is safer
+            console.error("Update contact error:", error);
             return false;
         } catch (e) {
             return false;

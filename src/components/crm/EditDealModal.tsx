@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
-import { endpoints } from '@/lib/api_config';
+import { supabase } from '@/lib/supabase';
 import {
     FileText,
     MessageSquare,
@@ -41,16 +41,10 @@ export default function EditDealModal({ isOpen, onClose, deal, onSave, onDelete 
     const [activeTab, setActiveTab] = useState('details');
     const [formData, setFormData] = useState<any>(deal || {});
 
-    useEffect(() => {
-        if (deal) {
-            setFormData({
-                ...deal,
-                next_activity_date: deal.next_activity_date ? deal.next_activity_date.split('T')[0] : ''
-            });
-        }
-    }, [deal]);
+    // ... useEffect
 
     const handleSave = () => {
+        // ... (same as before)
         const cleanData = {
             ...formData,
             value: parseFloat(formData.value) || 0,
@@ -64,18 +58,22 @@ export default function EditDealModal({ isOpen, onClose, deal, onSave, onDelete 
         onClose();
     };
 
-    // API Fetchers
+    // API Fetchers using Supabase Layer directly
     const fetchContacts = async (query: string) => {
         try {
-            const response = await fetch(endpoints.contacts);
-            if (!response.ok) return [];
-            const contacts = await response.json();
-            // Filter locally by query
-            if (!query) return contacts;
-            return contacts.filter((c: any) =>
-                c.name?.toLowerCase().includes(query.toLowerCase()) ||
-                c.email?.toLowerCase().includes(query.toLowerCase())
-            );
+            let queryBuilder = supabase.from('contacts').select('id, name, email');
+
+            if (query) {
+                queryBuilder = queryBuilder.ilike('name', `%${query}%`);
+            }
+
+            const { data, error } = await queryBuilder.limit(20);
+
+            if (error) {
+                console.error('Error fetching contacts:', error);
+                return [];
+            }
+            return data || [];
         } catch (error) {
             return [];
         }
@@ -83,16 +81,19 @@ export default function EditDealModal({ isOpen, onClose, deal, onSave, onDelete 
 
     const fetchLawyers = async (query: string) => {
         try {
-            const response = await fetch(endpoints.lawyers);
-            if (!response.ok) return [];
-            const lawyers = await response.json();
-            // Filter locally by query
-            if (!query) return lawyers;
-            return lawyers.filter((l: any) =>
-                l.name?.toLowerCase().includes(query.toLowerCase()) ||
-                l.email?.toLowerCase().includes(query.toLowerCase()) ||
-                l.oab?.toLowerCase().includes(query.toLowerCase())
-            );
+            let queryBuilder = supabase.from('lawyers').select('id, name, email, oab');
+
+            if (query) {
+                queryBuilder = queryBuilder.ilike('name', `%${query}%`);
+            }
+
+            const { data, error } = await queryBuilder.limit(20);
+
+            if (error) {
+                console.error('Error fetching lawyers:', error);
+                return [];
+            }
+            return data || [];
         } catch (error) {
             return [];
         }
