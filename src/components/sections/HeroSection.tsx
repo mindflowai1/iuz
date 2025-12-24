@@ -69,7 +69,7 @@ export function HeroSection() {
     const FeatureIcon = CurrentFeature.icon;
 
     return (
-        <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#020408] selection:bg-amber-500/30 selection:text-amber-200">
+        <section className="relative py-32 flex items-center justify-center overflow-hidden bg-[#020408] selection:bg-amber-500/30 selection:text-amber-200">
             {/* --- Premium Ambient Lighting (Aurora Mesh) --- */}
             {/* --- Premium Ambient Lighting (Aurora Mesh) --- */}
             <div className="absolute inset-0 z-0">
@@ -102,7 +102,7 @@ export function HeroSection() {
                         </motion.div>
 
                         <div className="space-y-6">
-                            <motion.h1
+                            <motion.h2
                                 initial={{ opacity: 0, y: 30 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.8, delay: 0.1 }}
@@ -112,7 +112,7 @@ export function HeroSection() {
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600 drop-shadow-sm">
                                     Exponencial.
                                 </span>
-                            </motion.h1>
+                            </motion.h2>
 
                             <motion.p
                                 initial={{ opacity: 0, y: 20 }}

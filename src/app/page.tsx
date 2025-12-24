@@ -7,17 +7,19 @@ import { DiferenciaisSection } from '@/components/sections/DiferenciaisSection';
 import { IuzSection } from '@/components/sections/IuzSection';
 import { ComoFuncionaSection } from '@/components/sections/ComoFuncionaSection';
 import { Footer } from '@/components/Footer';
+import { WhatsAppPopup } from '@/components/WhatsAppPopup';
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-[#020408]">
       <Navbar />
-      <HeroSection />
+      <IuzSection />
       <AreasAtuacaoSection />
       <DiferenciaisSection />
       <ComoFuncionaSection />
-      <IuzSection />
+      <HeroSection />
       <Footer />
+      <WhatsAppPopup />
     </main>
   );
 }
