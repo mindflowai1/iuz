@@ -4,10 +4,7 @@ import { Scale, Mail, MapPin, Phone } from 'lucide-react';
 
 export function Footer() {
     return (
-        <footer className="relative bg-slate-950 text-white py-16 px-6 border-t border-slate-900">
-            {/* Subtle Top Glow */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-[1px] bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
-
+        <footer className="relative bg-[#020408] text-white py-16 px-6 border-t border-white/5">
             <div className="container mx-auto relative z-10">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
                     {/* Logo and Description */}
@@ -16,7 +13,7 @@ export function Footer() {
                             <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500">
                                 <Scale className="w-6 h-6" />
                             </div>
-                            <span className="text-xl font-bold text-white">CRM Jurídico</span>
+                            <span className="text-xl font-bold text-white">IUZ Advocacia</span>
                         </div>
                         <p className="text-slate-400 text-sm font-light leading-relaxed">
                             Transformando a advocacia com tecnologia avançada. Atendimento 24/7 e resultados comprovados.
@@ -59,16 +56,16 @@ export function Footer() {
                             </li>
                             <li className="flex items-center gap-3 text-slate-400 text-sm">
                                 <Mail className="w-4 h-4 flex-shrink-0 text-amber-500" />
-                                <span>contato@escritorio.com</span>
+                                <span>contato@iuz.com.br</span>
                             </li>
                         </ul>
                     </div>
                 </div>
 
                 {/* Bottom Bar */}
-                <div className="pt-8 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
                     <p className="text-slate-500 text-sm">
-                        © 2025 CRM Jurídico MVP. Todos os direitos reservados.
+                        © 2025 IUZ Advocacia. Todos os direitos reservados.
                     </p>
                     <div className="flex gap-6 text-sm">
                         <a href="#" className="text-slate-400 hover:text-amber-500 transition-colors">
